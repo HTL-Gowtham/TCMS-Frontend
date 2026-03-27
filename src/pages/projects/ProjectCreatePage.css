@@ -1,0 +1,144 @@
+/* ProjectCreatePage CSS — migrated from src/projects/ProjectCreate.css */
+
+:root {
+  --tp-bg:             #FFFFFF;
+  --tp-primary:        #0088CF;
+  --tp-primary-hover:  #006fa3;
+  --tp-text:           #334155;
+  --tp-text-dark:      #1e293b;
+  --tp-text-muted:     #64748b;
+  --tp-border:         #e2e8f0;
+  --tp-input-border:   #cbd5e1;
+}
+
+.tp-page.full-width-layout {
+  background-color: #f8fafc !important;
+  align-items: flex-start;
+  overflow-y: auto !important;
+  padding-top: 20px !important;
+}
+
+.tp-form-card.wide-card {
+  background: #ffffff;
+  width: 100%;
+  border-radius: 0;
+  border: 1px solid var(--tp-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.tp-card-header {
+  padding: 15px 25px;
+  border-bottom: 1px solid var(--tp-border);
+  background-color: #FAFCFF;
+}
+
+.tp-card-header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--tp-text-dark);
+}
+
+.tp-form-body {
+  padding: 20px 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row-linear {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.linear-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.linear-group label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tp-text-muted);
+  text-transform: uppercase;
+}
+
+.req { color: #ef4444; margin-left: 2px; }
+
+.tp-input.sharp {
+  padding: 4px 10px;
+  border: 1px solid var(--tp-input-border);
+  border-radius: 0 !important;
+  font-size: 0.8rem;
+  color: var(--tp-text-dark);
+  transition: all 0.2s ease;
+  background-color: #fff;
+  height: 32px;
+}
+.tp-input.sharp:focus {
+  outline: none;
+  border-color: var(--tp-primary);
+  box-shadow: 0 0 0 1px var(--tp-primary);
+}
+
+.input-error  { border-color: #ef4444 !important; }
+.error-msg    { font-size: 0.65rem; color: #ef4444; margin-top: 2px; }
+
+.form-divider { height: 1px; background-color: var(--tp-border); width: 100%; }
+
+.form-row-checks { display: flex; flex-direction: column; gap: 8px; }
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tp-text-muted);
+  text-transform: uppercase;
+}
+
+.checks-container { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.checkbox-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  color: var(--tp-text);
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 28px;
+}
+.checkbox-pill:hover { background-color: #f1f5f9; border-color: #cbd5e1; }
+.checkbox-pill:has(input:checked) {
+  background-color: #F0F9FF;
+  border-color: var(--tp-primary);
+  color: var(--tp-primary);
+  font-weight: 600;
+}
+.checkbox-pill input { accent-color: var(--tp-primary); }
+
+.tp-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px; }
+
+.primary-btn.sharp,
+.btn-secondary.sharp {
+  border-radius: 0 !important;
+  padding: 0 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  height: 32px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.primary-btn.sharp { background-color: var(--tp-primary); color: white; }
+.primary-btn.sharp:hover { background-color: var(--tp-primary-hover); }
+.btn-secondary.sharp { background-color: white; border: 1px solid var(--tp-input-border); color: var(--tp-text); }
+.btn-secondary.sharp:hover { background-color: #f1f5f9; }

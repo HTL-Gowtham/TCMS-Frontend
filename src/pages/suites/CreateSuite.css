@@ -1,0 +1,172 @@
+/* CreateSuite CSS — migrated from src/suites/CreateSuite.css */
+
+:root {
+  --cs-primary:       #0088CF;
+  --cs-primary-hover: #006fa3;
+  --cs-border:        #e2e8f0;
+  --cs-border-strong: #cbd5e1;
+  --cs-text:          #334155;
+  --cs-text-dark:     #1e293b;
+  --cs-text-muted:    #64748b;
+  --cs-bg-page:       #FFFFFF;
+  --cs-radius:        4px;
+}
+
+.cs-centered-container {
+  width: 100%;
+  height: 100%;
+}
+
+.cs-compact-card {
+  background: var(--cs-bg-page);
+  width: 820px;
+  border-radius: 6px;
+  border: 1px solid var(--cs-border);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background-color: #FAFCFF;
+  border-bottom: 1px solid var(--cs-border-strong);
+  flex-shrink: 0;
+}
+
+.cs-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--cs-text-dark);
+}
+
+.cs-text-muted { color: var(--cs-text-muted); }
+.cs-text-sm    { font-size: 0.78rem; }
+
+.cs-card-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  padding: 18px;
+  align-items: start;
+}
+
+.cs-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.cs-form-group label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--cs-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cs-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--cs-border-strong);
+  border-radius: var(--cs-radius);
+  font-size: 0.82rem;
+  color: var(--cs-text-dark);
+  background: white;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.cs-input:focus { border-color: var(--cs-primary); box-shadow: 0 0 0 2px rgba(0, 136, 207, 0.12); }
+.cs-input::placeholder { color: #cbd5e1; font-style: italic; }
+
+.cs-input-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--cs-border-strong);
+  border-radius: var(--cs-radius);
+  font-size: 0.82rem;
+  color: var(--cs-text-dark);
+  font-family: inherit;
+  background: white;
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.cs-input-textarea:focus { border-color: var(--cs-primary); box-shadow: 0 0 0 2px rgba(0, 136, 207, 0.12); }
+.cs-input-textarea::placeholder { color: #cbd5e1; font-style: italic; }
+
+.cs-input-textarea.cs-short-text {
+  min-height: 34px;
+  height: 34px;
+  max-height: 140px;
+}
+.cs-input-textarea.cs-short-text:focus { height: 72px; }
+
+.cs-error-msg {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--cs-radius);
+  padding: 7px 10px;
+}
+
+.cs-card-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--cs-border);
+  margin-top: 5px;
+}
+
+.cs-btn-primary {
+  background: var(--cs-primary);
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: var(--cs-radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.cs-btn-primary:hover:not(:disabled) { background: var(--cs-primary-hover); }
+.cs-btn-primary:disabled { background: #93c5fd; cursor: not-allowed; opacity: 0.7; }
+
+.cs-btn-secondary {
+  background: white;
+  border: 1px solid var(--cs-border-strong);
+  color: var(--cs-text);
+  padding: 6px 16px;
+  border-radius: var(--cs-radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.cs-btn-secondary:hover { background: #f1f5f9; }
+
+::-webkit-scrollbar           { width: 6px; height: 6px; }
+::-webkit-scrollbar-track     { background: transparent; }
+::-webkit-scrollbar-thumb     { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }

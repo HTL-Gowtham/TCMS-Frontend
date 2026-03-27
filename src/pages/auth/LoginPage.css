@@ -1,0 +1,105 @@
+/**
+ * @file LoginPage.css
+ * @description Styles for the login page — copied from old Login.css.
+ */
+
+/* Reuse existing auth page styles from old project */
+.auth-page {
+  min-height: 100vh;
+  background-color: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-topbar {
+  height: 50px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-logo-box {
+  width: 28px;
+  height: 28px;
+  background-color: #0f4c81;
+  border-radius: 50%;
+}
+
+.auth-brand-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.auth-login-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-login-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 36px 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.auth-title {
+  margin: 0 0 24px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #163860;
+}
+
+.auth-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+  outline: none;
+}
+.auth-input:focus {
+  border-color: #0088CF;
+  box-shadow: 0 0 0 3px rgba(0, 136, 207, 0.12);
+}
+
+.auth-button {
+  width: 100%;
+  height: 42px;
+  background-color: #0088CF;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background-color 0.2s;
+}
+.auth-button:hover:not(:disabled) { background-color: #0076b5; }
+.auth-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.auth-link {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+.auth-link a { color: #0088CF; font-weight: 600; text-decoration: none; }
+.auth-link a:hover { text-decoration: underline; }
