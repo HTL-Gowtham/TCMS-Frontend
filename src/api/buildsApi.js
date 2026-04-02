@@ -1,6 +1,6 @@
 /**
  * @file buildsApi.js
- * @description CRUD operations for Builds within a Test Plan.
+ * @description CRUD operations for Builds within a Test Plan/Sprint context.
  */
 
 import axiosInstance from "./axiosInstance";
@@ -14,11 +14,17 @@ export const getBuildsByPlan = (planId) =>
 
 /**
  * Create a build under a plan.
- * @param {number} planId  — used in the URL path AND sent as testplan_id in the body
+ * @param {number} planId  — used in the URL path
  * @param {object} payload — build fields (build_version, build_desc, etc.)
  */
 export const createBuild = (planId, payload) =>
-  axiosInstance.post(`/testplans/${planId}/builds/`, { ...payload, testplan_id: planId }).then((r) => r.data);
+  axiosInstance
+    .post(`/testplans/${planId}/builds/`, {
+      ...payload,
+      testplan_id: payload?.testplan_id ?? payload?.sprint_id ?? planId,
+      sprint_id: payload?.sprint_id ?? payload?.testplan_id ?? planId,
+    })
+    .then((r) => r.data);
 
 /**
  * Update a build.

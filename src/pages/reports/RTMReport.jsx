@@ -6,7 +6,8 @@
 /* eslint-disable */
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getTestcasesByProject } from "../../api/testcasesApi";
+import { getAssignedTestcases } from "../../api/testplansApi";
+import { getSprints } from "../../api/sprintsApi";
 import { exportToExcel } from "../../utils/excelExport";
 import { useProject } from "../../context/ProjectContext";
 import toast from "react-hot-toast";
@@ -18,30 +19,59 @@ const RTMReport = () => {
   const targetId = activeProject?.id || projectId;
 
   const [loading, setLoading]   = useState(false);
+  const [sprints, setSprints]   = useState([]);
+  const [selectedSprintId, setSelectedSprintId] = useState("");
   const [rtmRows, setRtmRows]   = useState([]);
   const [error, setError]       = useState(null);
 
-  /* ── 1. Fetch & process ─────────────────────────────────────── */
+  const getSprintName = (s) => s?.sprint_name || s?.sprint?.sprint_name || s?.sprint?.name || s?.testplan_name || `Sprint #${s?.id}`;
+
+  /* ── 1. Fetch sprints ─────────────────────────────────────── */
   useEffect(() => {
     if (!targetId) return;
+    const fetchSprints = async () => {
+      try {
+        const data = await getSprints(targetId);
+        const sprintList = Array.isArray(data) ? data : [];
+        setSprints(sprintList);
+        if (sprintList.length > 0) {
+          setSelectedSprintId(String(sprintList[0].id));
+        } else {
+          setSelectedSprintId("");
+        }
+      } catch {
+        setSprints([]);
+        setSelectedSprintId("");
+      }
+    };
+    fetchSprints();
+  }, [targetId]);
+
+  /* ── 2. Fetch & process (sprint-wise) ───────────────────────── */
+  useEffect(() => {
+    if (!selectedSprintId) {
+      setRtmRows([]);
+      setError(null);
+      return;
+    }
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await getTestcasesByProject(targetId);
+        const data = await getAssignedTestcases(selectedSprintId);
         if (Array.isArray(data)) {
           processRTMData(data);
         } else {
           setError("Invalid data format from server.");
         }
       } catch {
-        setError("Failed to load Test Cases. Ensure the backend endpoint exists.");
+        setError("Failed to load Test Cases for selected sprint.");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [targetId]);
+  }, [selectedSprintId]);
 
   /* ── 2. Pivot logic ─────────────────────────────────────────── */
   const processRTMData = (testCases) => {
@@ -77,7 +107,8 @@ const RTMReport = () => {
         "System Tests":      row.System.map((tc) => `TC-${tc.id}`).join(", ")      || "-",
         "Acceptance Tests":  row.Other.map((tc) => `TC-${tc.id}`).join(", ")       || "-",
       }));
-      await exportToExcel(excelData, "RTM_Report.xlsx");
+      const fileSuffix = selectedSprintId ? `_Sprint_${selectedSprintId}` : "";
+      await exportToExcel(excelData, `RTM_Report${fileSuffix}.xlsx`);
       toast.success("RTM Report exported successfully!");
     } catch (err) {
       toast.error("Error exporting to Excel: " + err.message);
@@ -109,7 +140,21 @@ const RTMReport = () => {
         {/* Header */}
         <div className="header-row">
           <h3>📊 Requirements Traceability Matrix</h3>
-          {activeProject && <div className="meta-badge">{activeProject.project_name}</div>}
+          <div className="header-meta-group">
+            {activeProject && <div className="meta-badge">{activeProject.project_name}</div>}
+            <select
+              className="rtm-sprint-select"
+              value={selectedSprintId}
+              onChange={(e) => setSelectedSprintId(e.target.value)}
+              disabled={sprints.length === 0}
+            >
+              {sprints.length === 0 ? (
+                <option value="">No sprints</option>
+              ) : (
+                sprints.map((s) => <option key={s.id} value={s.id}>{getSprintName(s)}</option>)
+              )}
+            </select>
+          </div>
           {!loading && !error && rtmRows.length > 0 && (
             <button type="button" className="export-btn" onClick={exportRTMToExcel} title="Export to Excel">
               📥 Export to Excel
@@ -140,7 +185,7 @@ const RTMReport = () => {
               </thead>
               <tbody>
                 {rtmRows.length === 0 ? (
-                  <tr><td colSpan="5" className="empty-row">No Test Cases found for this project.</td></tr>
+                  <tr><td colSpan="5" className="empty-row">{selectedSprintId ? "No Test Cases found for this sprint." : "Select a sprint to view RTM."}</td></tr>
                 ) : (
                   rtmRows.map((row) => (
                     <tr key={row.task_id}>

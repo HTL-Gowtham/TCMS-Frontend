@@ -1,6 +1,6 @@
 /**
  * @file AssignTestCasesPage.jsx
- * @description Assign/unassign test cases to a test plan.
+ * @description Assign/unassign test cases to a sprint.
  *              Only "Ready" status test cases can be assigned.
  */
 
@@ -8,26 +8,34 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { getPlanById, getAssignedTestcases, saveAssignedTestcases } from "../../api/testplansApi";
+import { useProject } from "../../context/ProjectContext";
+import { getSprints } from "../../api/sprintsApi";
+import { getAssignedTestcases, saveAssignedTestcases } from "../../api/testplansApi";
 import { getSuitesWithTestcases } from "../../api/suitesApi";
 import { getTestcaseById } from "../../api/testcasesApi";
 import "./AssignTestCasesPage.css";
 
 const AssignTestCasesPage = () => {
   const navigate = useNavigate();
-  const { planId } = useParams();
+  const { sprintId } = useParams();
+  const { activeProject } = useProject();
 
-  const [planInfo, setPlanInfo] = useState(null);
+  const [sprintInfo, setSprintInfo] = useState(null);
   const [suites, setSuites] = useState([]);
   const [selectedSuiteId, setSelectedSuiteId] = useState(null);
   const [selectedTestcases, setSelectedTestcases] = useState([]);
   const [viewingTestcase, setViewingTestcase] = useState(null);
 
+  const getSprintName = (s) =>
+    s?.sprint_name || s?.name || s?.title || `Sprint #${s?.id}`;
+
   // ── Data loading ─────────────────────────────────────────
-  const fetchPlanInfo = async () => {
+  const fetchSprintInfo = async (projectId) => {
+    if (!projectId) return;
     try {
-      const data = await getPlanById(planId);
-      setPlanInfo(data);
+      const sprints = await getSprints(projectId);
+      const found = sprints.find((s) => String(s.id) === String(sprintId));
+      setSprintInfo(found || null);
     } catch (e) { console.error(e); }
   };
 
@@ -40,25 +48,27 @@ const AssignTestCasesPage = () => {
   };
 
   const fetchAssignedTestcases = async () => {
+    if (!sprintId) return;
     try {
-      const data = await getAssignedTestcases(planId);
+      const data = await getAssignedTestcases(sprintId);
       setSelectedTestcases(data.map((tc) => tc.id));
     } catch (e) { console.error(e); }
   };
 
   useEffect(() => {
-    fetchPlanInfo();
     fetchAssignedTestcases();
-  }, [planId]);
+  }, [sprintId]);
 
   useEffect(() => {
-    if (planInfo?.project_id) fetchSuites(planInfo.project_id);
-  }, [planInfo]);
+    if (!activeProject?.id) return;
+    fetchSprintInfo(activeProject.id);
+    fetchSuites(activeProject.id);
+  }, [activeProject?.id, sprintId]);
 
   // ── Save ─────────────────────────────────────────────────
   const handleSave = async () => {
     try {
-      await saveAssignedTestcases(planId, selectedTestcases);
+      await saveAssignedTestcases(sprintId, selectedTestcases);
       toast.success("Assignment Saved Successfully!");
       navigate(-1);
     } catch { toast.error("Error saving assignment"); }
@@ -103,10 +113,10 @@ const AssignTestCasesPage = () => {
       <div className="at-header">
         <div className="at-header-left">
           <h2 className="at-page-title">Assign Test Cases</h2>
-          {planInfo && (
+          {sprintInfo && (
             <div className="at-context-badges">
-              <span className="ctx-badge">Plan: {planInfo.testplan_name}</span>
-              <span className="ctx-badge">ID: {planInfo.project_id}</span>
+              <span className="ctx-badge">Sprint: {getSprintName(sprintInfo)}</span>
+              <span className="ctx-badge">ID: {sprintId}</span>
             </div>
           )}
         </div>

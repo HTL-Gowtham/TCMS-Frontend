@@ -2,10 +2,10 @@
  * @file ExecutionPage.jsx
  * @description Test execution runner with step-level pass/fail/skip and build finalization.
  *
- * URL shape: /execution/<projectId>/<planId>/<buildId>/<testcaseId>
+ * URL shape: /execution/<projectId>/<sprintId>/<buildId>/<testcaseId>
  * All IDs parsed via useExecutionParams() hook — zero useParams() dependency.
  *
- * VAPT: No hardcoded URLs. All axios calls via executionApi, testplansApi, buildsApi.
+ * VAPT: No hardcoded URLs. All axios calls via executionApi, sprintsApi, buildsApi.
  */
 
 /* eslint-disable */
@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useProject } from "../../context/ProjectContext";
 import useExecutionParams from "../../hooks/useExecutionParams";
-import { getPlansByProject } from "../../api/testplansApi";
+import { getSprints } from "../../api/sprintsApi";
 import { getBuildsByPlan, closeBuild } from "../../api/buildsApi";
 import { getAssignedTestcases } from "../../api/testplansApi";
 import {
@@ -60,10 +60,11 @@ const FinalizeModal = ({ isOpen, onClose, onConfirm, unexecutedCount, hasFailure
 const ExecutionPage = () => {
   const navigate = useNavigate();
   const { activeProject } = useProject();
-  const { projectId: urlProjectId, planId, buildId, testcaseId } = useExecutionParams();
+  const { projectId: urlProjectId, sprintId: urlSprintId, planId, buildId, testcaseId } = useExecutionParams();
   const projectId = urlProjectId || String(activeProject?.id || "");
+  const sprintId = urlSprintId || planId;
 
-  const [plans,     setPlans]     = useState([]);
+  const [sprints,   setSprints]   = useState([]);
   const [builds,    setBuilds]    = useState([]);
   const [testcases, setTestcases] = useState([]);
   const [selectedTC, setSelectedTC] = useState(null);
@@ -80,8 +81,8 @@ const ExecutionPage = () => {
   const [issueTaskId,       setIssueTaskId]       = useState("");
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
 
-  const updateUrl = useCallback((proj, plan, build, tc) => {
-    const path = ["/execution", proj, plan, build, tc]
+  const updateUrl = useCallback((proj, sprint, build, tc) => {
+    const path = ["/execution", proj, sprint, build, tc]
       .map((s) => s || "")
       .join("/")
       .replace(/\/+$/, "");
@@ -103,38 +104,40 @@ const ExecutionPage = () => {
     hasFailures: testcases.some((tc) => tc.status === "Fail"),
   }), [testcases]);
 
-  // 1. Load plans
+  const getSprintName = (s) => s?.sprint_name || s?.sprint?.sprint_name || s?.sprint?.name || s?.testplan_name || `Sprint #${s?.id}`;
+
+  // 1. Load sprints
   useEffect(() => {
     if (!activeProject?.id) return;
-    getPlansByProject(activeProject.id)
-      .then((data) => setPlans(data || []))
-      .catch((err) => console.error("Plans load error:", err));
+    getSprints(activeProject.id)
+      .then((data) => setSprints(data || []))
+      .catch((err) => console.error("Sprints load error:", err));
   }, [activeProject?.id]);
 
-  // 2. Load builds when plan changes
+  // 2. Load builds when sprint changes
   useEffect(() => {
-    if (!planId) { setBuilds([]); setTestcases([]); return; }
-    getBuildsByPlan(planId)
+    if (!sprintId) { setBuilds([]); setTestcases([]); return; }
+    getBuildsByPlan(sprintId)
       .then((data) => {
         const active = (data || []).filter((b) => b.build_active);
         setBuilds(active);
         if (active.length === 0) { setTestcases([]); return; }
         if (!buildId) {
           const latest = [...active].sort((a, b) => b.id - a.id)[0];
-          updateUrl(projectId, planId, String(latest.id), "");
+          updateUrl(projectId, sprintId, String(latest.id), "");
         }
       })
       .catch((err) => console.error("Builds load error:", err));
-  }, [planId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sprintId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 3. Load test cases when build changes
   useEffect(() => {
-    if (!planId || !buildId) { setTestcases([]); return; }
+    if (!sprintId || !buildId) { setTestcases([]); return; }
     const fetchTCs = async () => {
       try {
         const [tcRes, resRes] = await Promise.all([
-          getAssignedTestcases(planId),
-          getExecutionResults(planId, buildId),
+          getAssignedTestcases(sprintId),
+          getExecutionResults(sprintId, buildId),
         ]);
         const merged = (tcRes || []).map((tc) => {
           const saved = (resRes || []).find((r) => r.testcase_id === tc.id);
@@ -146,7 +149,7 @@ const ExecutionPage = () => {
       }
     };
     fetchTCs();
-  }, [planId, buildId]);
+  }, [sprintId, buildId]);
 
   // 4. Load single test case detail
   useEffect(() => {
@@ -245,13 +248,13 @@ const ExecutionPage = () => {
     if (overallAttachment) formData.append("attachment", overallAttachment);
 
     try {
-      await saveExecution(planId, buildId, formData);
+      await saveExecution(sprintId, buildId, formData);
       setTestcases((prev) => prev.map((t) => t.id === selectedTC.id ? { ...t, status: currentStatus } : t));
       toast.success("Saved!");
       if (moveNext) {
         const idx = testcases.findIndex((t) => t.id === selectedTC.id);
         if (idx !== -1 && idx < testcases.length - 1) {
-          updateUrl(projectId, planId, buildId, testcases[idx + 1].id);
+          updateUrl(projectId, sprintId, buildId, testcases[idx + 1].id);
         }
       }
     } catch (err) {
@@ -285,14 +288,14 @@ const ExecutionPage = () => {
           <div className="tc-list-scroll">
             {testcases.length === 0 ? (
               <div className="empty-msg-box">
-                {!planId ? "Select a plan to begin." : builds.length === 0 ? "No Builds found. Create one in Test Plans." : "No Test Cases assigned to this plan."}
+                {!sprintId ? "Select a sprint to begin." : builds.length === 0 ? "No Builds found. Create one in Sprints." : "No Test Cases assigned to this sprint."}
               </div>
             ) : (
               testcases.map((tc) => (
                 <div
                   key={tc.id}
                   className={`exec-tc-item ${testcaseId == tc.id ? "active" : ""}`}
-                  onClick={() => updateUrl(projectId, planId, buildId, tc.id)}
+                  onClick={() => updateUrl(projectId, sprintId, buildId, tc.id)}
                   style={{ cursor: "pointer" }}
                 >
                   <span className="tc-name">{tc.testcase_name}</span>
@@ -310,12 +313,12 @@ const ExecutionPage = () => {
           {/* Top bar: selectors */}
           <div className="top-bar">
             <div className="selectors">
-              <select value={planId || ""} onChange={(e) => updateUrl(activeProject.id, e.target.value, "", "")}>
-                <option value="">Select Plan...</option>
-                {plans.map((p) => <option key={p.id} value={p.id}>{p.testplan_name}</option>)}
+              <select value={sprintId || ""} onChange={(e) => updateUrl(activeProject.id, e.target.value, "", "")}>
+                <option value="">Select Sprint...</option>
+                {sprints.map((s) => <option key={s.id} value={s.id}>{getSprintName(s)}</option>)}
               </select>
-              <select value={buildId || ""} disabled={!planId || builds.length === 0} onChange={(e) => updateUrl(activeProject.id, planId, e.target.value, "")}>
-                <option value="">{builds.length === 0 && planId ? "No builds available" : "Select Build..."}</option>
+              <select value={buildId || ""} disabled={!sprintId || builds.length === 0} onChange={(e) => updateUrl(activeProject.id, sprintId, e.target.value, "")}>
+                <option value="">{builds.length === 0 && sprintId ? "No builds available" : "Select Build..."}</option>
                 {builds.map((b) => <option key={b.id} value={b.id}>{b.build_version} {b.build_open ? "" : "(Closed)"}</option>)}
               </select>
             </div>

@@ -14,10 +14,11 @@ import toast from "react-hot-toast";
 import { useProject } from "../../context/ProjectContext";
 import {
   getSuiteById,
+  getSuitesByProject,
   updateSuite,
   deleteSuite,
 } from "../../api/suitesApi";
-import { getTestcaseById, deleteTestcase } from "../../api/testcasesApi";
+import { getTestcaseById, deleteTestcase, getTestcasesBySuite } from "../../api/testcasesApi";
 import CreateSuite from "./CreateSuite";
 import CreateTestCase from "./CreateTestCase";
 import ConfirmModal from "../../components/ui/ConfirmModal";
@@ -38,8 +39,34 @@ const TestDesignPage = () => {
   const [loading, setLoading] = useState(false);
   const [selectedSuite, setSelectedSuite] = useState(null);
   const [selectedTestcase, setSelectedTestcase] = useState(null);
+  const [suites, setSuites] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editSuiteData, setEditSuiteData] = useState({ suite_name: "", suite_description: "" });
+
+  // Accordion state
+  const [expandedSuiteId, setExpandedSuiteId] = useState(null);
+  const [suiteTestcasesMap, setSuiteTestcasesMap] = useState({});
+  const [loadingSuiteId, setLoadingSuiteId] = useState(null);
+
+  const toggleSuiteAccordion = async (suite) => {
+    const id = suite.id;
+    if (expandedSuiteId === id) {
+      setExpandedSuiteId(null);
+      return;
+    }
+    setExpandedSuiteId(id);
+    if (!suiteTestcasesMap[id]) {
+      setLoadingSuiteId(id);
+      try {
+        const tcs = await getTestcasesBySuite(id);
+        setSuiteTestcasesMap((prev) => ({ ...prev, [id]: tcs }));
+      } catch {
+        setSuiteTestcasesMap((prev) => ({ ...prev, [id]: [] }));
+      } finally {
+        setLoadingSuiteId(null);
+      }
+    }
+  };
 
   // Confirm modal
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -72,6 +99,8 @@ const TestDesignPage = () => {
       } else {
         setSelectedSuite(null);
         setSelectedTestcase(null);
+        const projectSuites = await getSuitesByProject(activeProject.id);
+        setSuites(projectSuites);
         setMode((prev) => (prev === "createSuite" ? "createSuite" : "dashboard"));
       }
     } catch (err) {
@@ -142,18 +171,112 @@ const TestDesignPage = () => {
 
       {/* 1. DASHBOARD */}
       {mode === "dashboard" && (
-        <div className="tp-center-card">
-          <div className="tp-empty-placeholder">
-            <h2>📁 {activeProject.project_name}</h2>
-            <p>Select a suite or create a new one.</p>
-            <button
-              type="button"
-              className="tp-btn-create"
-              onClick={() => setMode("createSuite")}
-            >
-              + Create New Suite
-            </button>
+        <div className="tp-content-column">
+          <div className="tp-header-row">
+            <div className="tp-title-group">
+              <span className="tp-icon-large">📁</span>
+              <h3 className="tp-page-title">{activeProject.project_name}</h3>
+            </div>
+            <div className="tp-header-actions">
+              <button
+                type="button"
+                className="tp-btn-create"
+                onClick={() => setMode("createSuite")}
+              >
+                + Create New Suite
+              </button>
+            </div>
           </div>
+
+          {suites.length === 0 ? (
+            <div className="tp-empty-placeholder">
+              <p>No suites yet. Create your first suite to get started.</p>
+            </div>
+          ) : (
+            <div className="tp-suite-list">
+              {suites.map((suite) => {
+                const isOpen = expandedSuiteId === suite.id;
+                const testcases = suiteTestcasesMap[suite.id] || [];
+                const isLoadingTcs = loadingSuiteId === suite.id;
+                return (
+                  <div key={suite.id} className={`tp-accordion-item${isOpen ? " open" : ""}`}>
+                    {/* Header row */}
+                    <div
+                      className="tp-suite-card"
+                      onClick={() => toggleSuiteAccordion(suite)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && toggleSuiteAccordion(suite)}
+                    >
+                      <div className="tp-suite-card-icon">{isOpen ? "📂" : "📁"}</div>
+                      <div className="tp-suite-card-body">
+                        <span className="tp-suite-card-name">{suite.suite_name}</span>
+                        {suite.suite_description && (
+                          <span className="tp-suite-card-desc">{suite.suite_description}</span>
+                        )}
+                      </div>
+                      <div className="tp-suite-card-actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="tp-btn-small"
+                          onClick={() => navigate(`/testdesign/${activeProject.id}/${suite.id}`)}
+                        >
+                          Open
+                        </button>
+                      </div>
+                      <span className={`tp-accordion-chevron${isOpen ? " rotated" : ""}`}>›</span>
+                    </div>
+
+                    {/* Accordion panel */}
+                    {isOpen && (
+                      <div className="tp-accordion-panel">
+                        {isLoadingTcs ? (
+                          <div className="tp-accordion-loading">Loading test cases…</div>
+                        ) : testcases.length === 0 ? (
+                          <div className="tp-accordion-empty">No test cases in this suite yet.</div>
+                        ) : (
+                          <table className="tp-accordion-table">
+                            <thead>
+                              <tr>
+                                <th style={{ width: 40 }}>#</th>
+                                <th>Test Case</th>
+                                <th style={{ width: 80 }}>Status</th>
+                                <th style={{ width: 70 }}>Importance</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {testcases.map((tc) => (
+                                <tr
+                                  key={tc.id}
+                                  className="tp-accordion-row"
+                                  onClick={() =>
+                                    navigate(`/testdesign/${activeProject.id}/${suite.id}/${tc.id}`)
+                                  }
+                                >
+                                  <td className="tp-id-cell center-text">{tc.id}</td>
+                                  <td className="tp-accordion-tc-name">{tc.testcase_name}</td>
+                                  <td>
+                                    <span className={`status-badge ${tc.testcase_status?.toLowerCase()}`}>
+                                      {tc.testcase_status}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span className={`importance-text ${tc.testcase_importance?.toLowerCase()}`}>
+                                      {tc.testcase_importance}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

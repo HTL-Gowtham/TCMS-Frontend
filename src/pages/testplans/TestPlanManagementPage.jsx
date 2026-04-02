@@ -17,6 +17,7 @@ import {
   updatePlan,
   deletePlan,
 } from "../../api/testplansApi";
+import { getSprints } from "../../api/sprintsApi";
 import {
   getBuildsByPlan,
   createBuild,
@@ -45,6 +46,28 @@ const EMPTY_BUILD = {
   build_releaseDate: TODAY,
   build_active: true, build_open: true,
 };
+
+const getSprintId = (item) => item?.sprint_id ?? item?.id;
+
+const getSprintName = (item) => {
+  if (!item) return "";
+  return item.sprint_name || item.sprint?.sprint_name || item.sprint?.name || item.testplan_name || "";
+};
+
+const getSprintStatus = (item) => {
+  const status = item?.sprint_status ?? item?.status ?? item?.state;
+  if (status != null && status !== "") return String(status);
+
+  const isActive = item?.sprint_active ?? item?.is_active ?? item?.plan_active;
+  if (typeof isActive === "boolean") return isActive ? "Active" : "Inactive";
+
+  const isClosed = item?.is_closed ?? item?.sprint_closed;
+  if (typeof isClosed === "boolean") return isClosed ? "Closed" : "Open";
+
+  return "-";
+};
+
+const MAIN_TABLE_COLS = 4;
 
 const TestPlanManagementPage = () => {
   const navigate = useNavigate();
@@ -86,9 +109,13 @@ const TestPlanManagementPage = () => {
   // Fetch plans when project changes
   const fetchPlans = async (pid) => {
     try {
-      const data = await getPlansByProject(pid);
+      const data = await getSprints(pid);
       setTestPlans(data);
-    } catch { console.error("Failed to fetch plans"); }
+    } catch {
+      // Keep backward compatibility if sprint endpoint is unavailable in older envs.
+      const fallback = await getPlansByProject(pid);
+      setTestPlans(fallback);
+    }
   };
 
   const fetchBuilds = async (planId) => {
@@ -146,8 +173,8 @@ const TestPlanManagementPage = () => {
   const handleCreateBuild = async () => {
     if (!newBuild.build_version) { toast.error("Build Title Required"); return; }
     try {
-      const targetPlanId = selectedPlanForAction?.id || selectedPlan?.id;
-      await createBuild(targetPlanId, { ...newBuild });
+      const targetPlanId = getSprintId(selectedPlanForAction) || getSprintId(selectedPlan);
+      await createBuild(targetPlanId, { ...newBuild, sprint_id: targetPlanId });
       toast.success("Build Created!");
       setShowBuildModal(false);
       setNewBuild({ ...EMPTY_BUILD });
@@ -161,7 +188,7 @@ const TestPlanManagementPage = () => {
       await updateBuild(editBuildData.id, editBuildData);
       toast.success("Build Updated!");
       setShowEditBuildModal(false);
-      const pid = selectedPlanForAction?.id || selectedPlan?.id;
+      const pid = getSprintId(selectedPlanForAction) || getSprintId(selectedPlan);
       fetchBuilds(pid);
     } catch { toast.error("Failed to update build"); }
   };
@@ -172,7 +199,7 @@ const TestPlanManagementPage = () => {
       try {
         await deleteBuild(buildId);
         toast.success("Build Deleted");
-        fetchBuilds(planId || selectedPlan?.id);
+        fetchBuilds(planId || getSprintId(selectedPlan));
       } catch { toast.error("Failed to delete build"); }
     });
   };
@@ -184,8 +211,9 @@ const TestPlanManagementPage = () => {
 
   const handleShowBuilds = (e, plan) => {
     e.stopPropagation();
-    if (expandedPlanId === plan.id) { setExpandedPlanId(null); }
-    else { setExpandedPlanId(plan.id); fetchBuilds(plan.id); }
+    const sprintId = getSprintId(plan);
+    if (expandedPlanId === sprintId) { setExpandedPlanId(null); }
+    else { setExpandedPlanId(sprintId); fetchBuilds(sprintId); }
   };
 
   // Search filter
@@ -193,7 +221,7 @@ const TestPlanManagementPage = () => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
-      (p.testplan_name   || "").toLowerCase().includes(q) ||
+      (getSprintName(p)  || "").toLowerCase().includes(q) ||
       (p.plandesc_pmtid  || "").toLowerCase().includes(q) ||
       (p.plandesc_name   || "").toLowerCase().includes(q)
     );
@@ -214,68 +242,68 @@ const TestPlanManagementPage = () => {
       <div className="tp-content-area">
         <div className="tp-section">
           {filteredPlans.length === 0 ? (
-            <p style={{ padding: "20px" }}>No Plans found.</p>
+            <p style={{ padding: "20px" }}>No Sprints found.</p>
           ) : (
             <table className="tp-table">
               <thead className="tp-table-title">
                 <tr>
-                  <th style={{ width: "200px" }}>Plan Name</th>
-                  <th>Desc. Name</th>
+                  <th style={{ width: "200px" }}>Sprint</th>
+                  {/* <th>Desc. Name</th> */}
                   <th style={{ width: "100px" }}>AL PMT ID</th>
-                  <th>Features Tested</th>
+                  {/* <th>Features Tested</th>
                   <th>Features Not Tested</th>
                   <th>References</th>
-                  <th>Est. Time (hr)</th>
-                  <th style={{ width: "80px" }}>Active</th>
-                  <th style={{ width: "150px" }}>Actions</th>
+                  <th>Est. Time (hr)</th> */}
+                  <th style={{ width: "120px" }}>Sprint Status</th>
+                  <th style={{ width: "150px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPlans.map((p) => (
                   <>
                     <tr
-                      key={p.id}
-                      className={`tp-plan-row ${selectedPlan?.id === p.id ? "tp-row-selected" : ""} ${expandedPlanId === p.id ? "active-plan" : ""}`}
+                      key={getSprintId(p)}
+                      className={`tp-plan-row ${getSprintId(selectedPlan) === getSprintId(p) ? "tp-row-selected" : ""} ${expandedPlanId === getSprintId(p) ? "active-plan" : ""}`}
                       onClick={() => setSelectedPlan(p)}
                       style={{ cursor: "pointer" }}
                     >
-                      <td>{p.testplan_name}</td>
-                      <td>{p.plandesc_name}</td>
-                      <td>{p.plandesc_pmtid}</td>
-                      <td>{p.plandesc_tested}</td>
+                      <td>{getSprintName(p)}</td>
+                      {/* <td>{p.plandesc_name}</td> */}
+                      <td>{getSprintId(p)}</td>
+                      {/* <td>{p.plandesc_tested}</td>
                       <td>{p.plandesc_nottested}</td>
                       <td>{p.plandesc_references}</td>
-                      <td>{p.plandesc_esttime}</td>
-                      <td>{p.plan_active ? "Yes" : "No"}</td>
+                      <td>{p.plandesc_esttime}</td> */}
+                      <td>{getSprintStatus(p)}</td>
                       <td className="tp-action-cell">
                         <div className="tp-action-wrapper">
                           <button
                             type="button"
-                            className={`btn-builds ${expandedPlanId === p.id ? "active" : ""}`}
+                            className={`btn-builds ${expandedPlanId === getSprintId(p) ? "active" : ""}`}
                             onClick={(e) => handleShowBuilds(e, p)}
                           >
-                            Builds {expandedPlanId === p.id ? "↑" : "↓"}
+                            Builds {expandedPlanId === getSprintId(p) ? "↑" : "↓"}
                           </button>
                           <button
                             type="button"
                             className="tp-dots-btn"
-                            onClick={(e) => toggleActionMenu(e, p.id)}
+                            onClick={(e) => toggleActionMenu(e, getSprintId(p))}
                           >
                             •••
                           </button>
-                          {actionMenuOpenId === p.id && (
+                          {actionMenuOpenId === getSprintId(p) && (
                             <div className="action-menu-dropdown" onClick={(e) => e.stopPropagation()}>
                               <div className="menu-item" onClick={(e) => { e.stopPropagation(); setEditPlanData(p); setShowEditPlanModal(true); setActionMenuOpenId(null); }}>
                                 <span className="icon">✏️</span> Edit
                               </div>
-                              <div className="menu-item" onClick={() => { navigate(`/assigntestcases/${p.id}`); setActionMenuOpenId(null); }}>
+                              <div className="menu-item" onClick={() => { navigate(`/assigntestcases/${getSprintId(p)}`); setActionMenuOpenId(null); }}>
                                 <span className="icon">👤</span> Assign Cases
                               </div>
-                              <div className="menu-item" onClick={() => { navigate(`/plantestcases/${p.id}`); setActionMenuOpenId(null); }}>
+                              <div className="menu-item" onClick={() => { navigate(`/plantestcases/${getSprintId(p)}`); setActionMenuOpenId(null); }}>
                                 <span className="icon">👁</span> View Cases
                               </div>
                               <div className="menu-divider" />
-                              <div className="menu-item delete-item" onClick={(e) => handleDeletePlan(e, p.id)}>
+                              <div className="menu-item delete-item" onClick={(e) => handleDeletePlan(e, getSprintId(p))}>
                                 <span className="icon">🗑</span> Delete
                               </div>
                             </div>
@@ -285,9 +313,9 @@ const TestPlanManagementPage = () => {
                     </tr>
 
                     {/* Expanded builds accordion */}
-                    {expandedPlanId === p.id && (
+                    {expandedPlanId === getSprintId(p) && (
                       <tr className="tp-builds-row-container">
-                        <td colSpan={9} className="tp-builds-wrapper">
+                        <td colSpan={MAIN_TABLE_COLS} className="tp-builds-wrapper">
                           <div className="tp-builds-inner">
                             <table className="builds-table">
                               <thead>
@@ -305,10 +333,10 @@ const TestPlanManagementPage = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {(!buildsCache[p.id] || buildsCache[p.id].length === 0) ? (
+                                {(!buildsCache[getSprintId(p)] || buildsCache[getSprintId(p)].length === 0) ? (
                                   <tr><td colSpan={6} style={{ textAlign: "center", padding: "20px", fontStyle: "italic", color: "#64748b" }}>No builds found. Add one to get started.</td></tr>
                                 ) : (
-                                  buildsCache[p.id].map((b) => (
+                                  buildsCache[getSprintId(p)].map((b) => (
                                     <tr key={b.id}>
                                       <td>{b.build_version}</td>
                                       <td>{b.build_desc}</td>
@@ -322,7 +350,7 @@ const TestPlanManagementPage = () => {
                                             <div className="action-menu-dropdown">
                                               <div className="menu-item" onClick={(e) => { e.stopPropagation(); setEditBuildData(b); setSelectedPlanForAction(p); setShowEditBuildModal(true); setActiveBuildMenu(null); }}>Edit</div>
                                               <div className="menu-divider" />
-                                              <div className="menu-item delete" onClick={(e) => { e.stopPropagation(); handleDeleteBuild(b.id, p.id); setActiveBuildMenu(null); }}>Delete</div>
+                                              <div className="menu-item delete" onClick={(e) => { e.stopPropagation(); handleDeleteBuild(b.id, getSprintId(p)); setActiveBuildMenu(null); }}>Delete</div>
                                             </div>
                                           )}
                                         </div>

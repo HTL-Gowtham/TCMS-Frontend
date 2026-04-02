@@ -93,11 +93,11 @@ const Navigator = ({ onCreatePlanClick, searchQuery, onSearchChange }) => { // e
           )}
 
           {/* Test Plan page: Create Plan */}
-          {isTestPlanPage && !isLocked && (
+          {/* {isTestPlanPage && !isLocked && (
             <button type="button" className="nav-action-btn" onClick={onCreatePlanClick}>
               + Create Plan
             </button>
-          )}
+          )} */}
         </div>
       </div>
     </div>

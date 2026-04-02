@@ -6,13 +6,13 @@
 import axiosInstance from "./axiosInstance";
 
 /**
- * Get all saved execution results for a plan + build combo.
- * @param {string|number} planId
+ * Get all saved execution results for a sprint + build combo.
+ * @param {string|number} sprintId
  * @param {string|number} buildId
  */
-export const getExecutionResults = (planId, buildId) =>
+export const getExecutionResults = (sprintId, buildId) =>
   axiosInstance
-    .get(`/reports/executions/?plan_id=${planId}&build_id=${buildId}`)
+    .get(`/reports/executions/?sprint_id=${sprintId}&plan_id=${sprintId}&build_id=${buildId}`)
     .then((r) => r.data);
 
 /**
@@ -45,13 +45,13 @@ export const getNextBugId = () =>
  * Save execution results for a test case.
  * Uses multipart/form-data to support optional file attachment.
  *
- * @param {string|number} planId
+ * @param {string|number} sprintId
  * @param {string|number} buildId
  * @param {FormData} formData
  */
-export const saveExecution = (planId, buildId, formData) =>
+export const saveExecution = (sprintId, buildId, formData) =>
   axiosInstance
-    .post(`/testplans/${planId}/builds/${buildId}/execute/`, formData, {
+    .post(`/testplans/${sprintId}/builds/${buildId}/execute/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     })
     .then((r) => r.data);

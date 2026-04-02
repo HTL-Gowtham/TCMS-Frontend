@@ -1,6 +1,6 @@
 /**
  * @file authApi.js
- * @description API functions for authentication: login and register.
+ * @description API functions for authentication: login, register, and SSO.
  */
 
 import axiosInstance from "./axiosInstance";
@@ -21,3 +21,32 @@ export const loginUser = ({ email, password }) =>
  */
 export const registerUser = (payload) =>
   axiosInstance.post("/users/signup/", payload).then((r) => r.data);
+
+/**
+ * Authenticate with Microsoft using an OAuth access token.
+ * @param {string} accessToken
+ * @param {string} [email]
+ * @returns {Promise<{ access: string, refresh: string, user_id: number, user_name: string, role: string }>}
+ */
+export const loginWithMicrosoft = (accessToken, email) =>
+  axiosInstance
+    .post("/users/auth/microsoft/", {
+      access_token: accessToken,
+      ...(email ? { email } : {}),
+    })
+    .then((r) => r.data);
+
+/**
+ * Generic SSO login entry point for provider-based expansion.
+ * @param {"microsoft"|"google"|"okta"} provider
+ * @param {string} token
+ * @param {string} [email]
+ */
+export const loginWithSsoProvider = (provider, token, email) => {
+  switch (provider) {
+    case "microsoft":
+      return loginWithMicrosoft(token, email);
+    default:
+      return Promise.reject(new Error(`Unsupported SSO provider: ${provider}`));
+  }
+};

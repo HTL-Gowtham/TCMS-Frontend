@@ -7,9 +7,9 @@
  * the pathname manually.
  *
  * Expected URL shape:
- *   /execution/<projectId>/<planId>/<buildId>/<testcaseId>
+ *   /execution/<projectId>/<sprintId>/<buildId>/<testcaseId>
  *
- * @returns {{ projectId, planId, buildId, testcaseId }} — all strings or null
+ * @returns {{ projectId, sprintId, planId, buildId, testcaseId }} — all strings or null
  */
 
 import { useLocation } from "react-router-dom";
@@ -21,6 +21,8 @@ const useExecutionParams = () => {
   // parts[0] === "execution"
   return {
     projectId:  parts[1] || null,
+    sprintId:   parts[2] || null,
+    // Backward-compatible alias for older callers.
     planId:     parts[2] || null,
     buildId:    parts[3] || null,
     testcaseId: parts[4] || null,

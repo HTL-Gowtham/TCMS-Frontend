@@ -1,12 +1,12 @@
 /**
  * @file PlanHistoryReport.jsx
- * @description Execution history report per test plan, with Excel export.
+ * @description Execution history report per sprint, with Excel export.
  */
 
 /* eslint-disable */
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { getPlansByProject } from "../../api/testplansApi";
+import { getSprints } from "../../api/sprintsApi";
 import { getPlanHistoryReport } from "../../api/reportsApi";
 import { exportToExcel } from "../../utils/excelExport";
 import toast from "react-hot-toast";
@@ -18,8 +18,8 @@ const PlanHistoryReport = () => {
   const { activeProject } = useProject();
   const targetProjectId = projectId || activeProject?.id;
 
-  const [plans, setPlans] = useState([]);
-  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [sprints, setSprints] = useState([]);
+  const [selectedSprintId, setSelectedSprintId] = useState("");
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -28,22 +28,27 @@ const PlanHistoryReport = () => {
   const [expandedTCs, setExpandedTCs] = useState({});
   const [expandedIssues, setExpandedIssues] = useState({});
 
+  const getSprintName = (s) => s?.sprint_name || s?.sprint?.sprint_name || s?.sprint?.name || s?.testplan_name || `Sprint #${s?.id}`;
+
   useEffect(() => {
     if (!targetProjectId) return;
-    getPlansByProject(targetProjectId)
-      .then((data) => setPlans(data))
-      .catch((err) => console.error("Error fetching plans:", err));
+    getSprints(targetProjectId)
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        setSprints(list);
+      })
+      .catch((err) => console.error("Error fetching sprints:", err));
   }, [targetProjectId]);
 
-  const handlePlanSelect = async (e) => {
-    const pId = e.target.value;
-    setSelectedPlanId(pId);
+  const handleSprintSelect = async (e) => {
+    const sprintSelectionId = e.target.value;
+    setSelectedSprintId(sprintSelectionId);
     setReportData(null);
     setError(null);
-    if (!pId) return;
+    if (!sprintSelectionId) return;
     setLoading(true);
     try {
-      const data = await getPlanHistoryReport(pId);
+      const data = await getPlanHistoryReport(sprintSelectionId);
       setReportData(data);
       if (data.builds?.length > 0) {
         setExpandedBuilds({ [data.builds[0].build_id]: true });
@@ -126,7 +131,8 @@ const PlanHistoryReport = () => {
       });
 
       if (excelData.length === 0) { toast.error("No execution data to export"); return; }
-      await exportToExcel(excelData, `Execution_History_${reportData.plan_name}.xlsx`);
+      const reportLabel = reportData.sprint_name || reportData.plan_name || selectedSprintId || "sprint";
+      await exportToExcel(excelData, `Execution_History_${reportLabel}.xlsx`);
       toast.success("Report exported successfully!");
     } catch (err) {
       toast.error("Error exporting report: " + err.message);
@@ -142,13 +148,13 @@ const PlanHistoryReport = () => {
           <div className="ph-breadcrumbs">
             <span>{reportData?.project_name || "Project"}</span>
             <span className="sep">/</span>
-            <span>{reportData?.plan_name || "Test Plan"}</span>
+            <span>{reportData?.sprint_name || reportData?.plan_name || "Sprint"}</span>
           </div>
         </div>
         <div className="ph-header-right">
-          <select onChange={handlePlanSelect} value={selectedPlanId} className="ph-select-modern">
-            <option value="">-- Select Test Plan --</option>
-            {plans.map((p) => <option key={p.id} value={p.id}>{p.testplan_name}</option>)}
+          <select onChange={handleSprintSelect} value={selectedSprintId} className="ph-select-modern">
+            <option value="">-- Select Sprint --</option>
+            {sprints.map((s) => <option key={s.id} value={s.id}>{getSprintName(s)}</option>)}
           </select>
           {reportData?.builds?.length > 0 && (
             <button type="button" className="ph-export-btn" onClick={exportPlanHistoryToExcel}>
@@ -164,7 +170,7 @@ const PlanHistoryReport = () => {
       {reportData && (
         <div className="ph-main-content">
           {(!reportData.builds || reportData.builds.length === 0) && (
-            <div className="ph-empty-state">No execution history found for this plan.</div>
+            <div className="ph-empty-state">No execution history found for this sprint.</div>
           )}
           <div className="ph-build-stack">
             {reportData.builds?.map((build) => {

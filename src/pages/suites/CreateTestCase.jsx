@@ -106,6 +106,14 @@ const CreateTestCase = ({ suite, onCancel, onSuccess, editingTestcase }) => {
       toast.error("Test case name is required");
       return;
     }
+    if (!formData.task_id.trim()) {
+      toast.error("Task ID is required");
+      return;
+    }
+    if (!/^[A-Za-z0-9_-]+$/.test(formData.task_id.trim())) {
+      toast.error("Task ID may only contain letters, numbers, hyphens, and underscores");
+      return;
+    }
     try {
       if (editingTestcase) {
         await updateTestcase(editingTestcase.id, formData);

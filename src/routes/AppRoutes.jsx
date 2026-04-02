@@ -53,7 +53,7 @@ const AppRoutes = () => (
 
       {/* Test Plans */}
       <Route path="/testplanmanagement/:projectId" element={<TestPlanManagementPage />} />
-      <Route path="/assigntestcases/:planId"        element={<AssignTestCasesPage />} />
+      <Route path="/assigntestcases/:sprintId"        element={<AssignTestCasesPage />} />
       <Route path="/plantestcases/:planId"          element={<PlanTestCasesPage />} />
 
       {/* Execution — wildcard to support deep URL segments */}
