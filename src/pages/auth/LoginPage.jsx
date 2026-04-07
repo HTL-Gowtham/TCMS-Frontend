@@ -343,9 +343,9 @@ const LoginPage = () => {
             </button>
           </form>
 
-          <p className="auth-link">
+          {/* <p className="auth-link">
             <Link to="/register">Create an account</Link>
-          </p>
+          </p> */}
         </div>
       </div>
     </div>
